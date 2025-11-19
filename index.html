@@ -527,7 +527,7 @@
 
     <script>
         // ========== CONFIGURAÇÃO DA API ==========
-        const API_URL = 'https://orcamento3d.onrender.com';
+        const API_URL = 'https://orcamento3d.onrender.com/api';
 
         // Variáveis globais
         let produtosOrcamento = [];
@@ -545,111 +545,87 @@
 
         // ========== FUNÇÕES DE API ==========
 
-        async function apiRequest(action, method = 'GET', data = null) {
-            try {
-                const options = {
-                    method: method,
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                };
+        async function apiRequest(endpoint, method = 'GET', data = null) {
+  try {
+    const options = {
+      method,
+      headers: { 'Content-Type': 'application/json' }
+    };
+    if (data && method !== 'GET') {
+      options.body = JSON.stringify(data);
+    }
+    const response = await fetch(`${API_URL}${endpoint}`, options);
+    const result = await response.json();
+    if (!response.ok || result.success === false) {
+      throw new Error(result.error || result.message || 'Erro na requisição');
+    }
+    return result;
+  } catch (err) {
+    console.error('Erro na API:', err);
+    showError('Erro ao comunicar com o servidor: ' + err.message);
+    throw err;
+  }
+}
 
-                if (data && method !== 'GET') {
-                    options.body = JSON.stringify(data);
-                }
+async function carregarOrcamentos() {
+  showLoading(true);
+  try {
+    const result = await apiRequest('/orcamentos');
+    renderizarHistorico(result.data);
+  } finally {
+    showLoading(false);
+  }
+}
 
-                const url = method === 'GET' && data 
-                    ? `${API_URL}?action=${action}&${new URLSearchParams(data).toString()}`
-                    : `${API_URL}?action=${action}`;
+async function obterOrcamento(id) {
+  showLoading(true);
+  try {
+    const result = await apiRequest(`/orcamentos/${id}`);
+    return result.data;
+  } finally {
+    showLoading(false);
+  }
+}
 
-                const response = await fetch(url, options);
-                const result = await response.json();
+async function salvarOrcamentoAPI() {
+  if (produtosOrcamento.length === 0) return;
 
-                if (!response.ok) {
-                    throw new Error(result.error || 'Erro na requisição');
-                }
+  const nomeCliente = produtosOrcamento[0].nomeCliente || 'Cliente não informado';
+  let totalGeral = 0;
+  produtosOrcamento.forEach(p => totalGeral += p.precoTotal);
 
-                return result;
-            } catch (error) {
-                console.error('Erro na API:', error);
-                showError('Erro ao comunicar com o servidor: ' + error.message);
-                throw error;
-            }
-        }
+  const dados = {
+    nomeCliente,
+    total: totalGeral,
+    produtos: produtosOrcamento
+  };
 
-        async function carregarOrcamentos() {
-            showLoading(true);
-            try {
-                const result = await apiRequest('listar_orcamentos');
-                renderizarHistorico(result.data);
-            } catch (error) {
-                console.error('Erro ao carregar orçamentos:', error);
-            } finally {
-                showLoading(false);
-            }
-        }
+  showLoading(true);
+  try {
+    if (orcamentoEditandoId !== null) {
+      await apiRequest(`/orcamentos/${orcamentoEditandoId}`, 'PUT', dados);
+      orcamentoEditandoId = null;
+      alertEditando.style.display = 'none';
+    } else {
+      await apiRequest('/orcamentos', 'POST', dados);
+    }
+    await carregarOrcamentos();
+  } finally {
+    showLoading(false);
+  }
+}
 
-        async function obterOrcamento(id) {
-            showLoading(true);
-            try {
-                const result = await apiRequest('obter_orcamento', 'GET', { id });
-                return result.data;
-            } catch (error) {
-                console.error('Erro ao obter orçamento:', error);
-                return null;
-            } finally {
-                showLoading(false);
-            }
-        }
+async function deletarOrcamentoAPI(id) {
+  if (!confirm('Remover este orçamento?')) return;
+  showLoading(true);
+  try {
+    await apiRequest(`/orcamentos/${id}`, 'DELETE');
+    await carregarOrcamentos();
+  } finally {
+    showLoading(false);
+  }
+}
 
-        async function salvarOrcamentoAPI() {
-            if (produtosOrcamento.length === 0) return;
-
-            const nomeCliente = produtosOrcamento[0].nomeCliente || 'Cliente não informado';
-            let totalGeral = 0;
-            produtosOrcamento.forEach(p => totalGeral += p.precoTotal);
-
-            const dados = {
-                nome_cliente: nomeCliente,
-                total: totalGeral,
-                produtos: produtosOrcamento
-            };
-
-            showLoading(true);
-            try {
-                if (orcamentoEditandoId !== null) {
-                    // Atualizar orçamento existente
-                    dados.id = orcamentoEditandoId;
-                    await apiRequest('atualizar_orcamento', 'POST', dados);
-                    orcamentoEditandoId = null;
-                    alertEditando.style.display = 'none';
-                } else {
-                    // Criar novo orçamento
-                    const result = await apiRequest('criar_orcamento', 'POST', dados);
-                    console.log('Orçamento criado com ID:', result.id);
-                }
-
-                await carregarOrcamentos();
-            } catch (error) {
-                console.error('Erro ao salvar orçamento:', error);
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        async function deletarOrcamentoAPI(id) {
-            if (!confirm('Tem certeza que deseja deletar este orçamento?')) return;
-
-            showLoading(true);
-            try {
-                await apiRequest('deletar_orcamento', 'GET', { id });
-                await carregarOrcamentos();
-            } catch (error) {
-                console.error('Erro ao deletar orçamento:', error);
-            } finally {
-                showLoading(false);
-            }
-        }
 
         // ========== FUNÇÕES UTILITÁRIAS ==========
 
