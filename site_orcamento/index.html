@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Precificação 3D</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            min-height: 100vh; 
+            padding: 20px; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 20px; 
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3); 
+            padding: 40px; 
+        }
+        h1 { 
+            color: #333; 
+            text-align: center; 
+            margin-bottom: 10px; 
+            font-size: 2em; 
+        }
+        .subtitle { 
+            text-align: center; 
+            color: #666; 
+            margin-bottom: 30px; 
+            font-size: 0.9em; 
+        }
+        .alert-editando { 
+            background: #fff3cd; 
+            border: 1px solid #ffc107; 
+            color: #856404; 
+            padding: 12px; 
+            border-radius: 8px; 
+            margin-bottom: 20px; 
+            text-align: center; 
+            font-weight: 600; 
+            display: none; 
+        }
+        .loading {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+        .form-group { margin-bottom: 20px; }
+        label { 
+            display: block; 
+            margin-bottom: 6px; 
+            color: #333; 
+            font-weight: 600; 
+            font-size: 0.9em; 
+        }
+        input { 
+            width: 100%; 
+            padding: 10px 12px; 
+            border: 2px solid #e0e0e0; 
+            border-radius: 8px; 
+            font-size: 0.95em; 
+            transition: all 0.3s; 
+        }
+        input:focus { 
+            outline: none; 
+            border-color: #667eea; 
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.1); 
+        }
+        .btn-row { 
+            display: flex; 
+            gap: 10px; 
+            margin-top: 10px; 
+            flex-wrap: wrap; 
+        }
+        .btn { 
+            flex: 1; 
+            padding: 12px; 
+            border-radius: 10px; 
+            border: none; 
+            cursor: pointer; 
+            font-size: 0.95em; 
+            font-weight: 600; 
+            transition: transform 0.2s, box-shadow 0.2s; 
+        }
+        .btn-adicionar { 
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%); 
+            color: white; 
+        }
+        .btn-pdf { 
+            background: #ffffff; 
+            color: #667eea; 
+            border: 2px solid #667eea; 
+        }
+        .btn-whatsapp { 
+            background: #25D366; 
+            color: white; 
+        }
+        .btn-novo { 
+            background: #ffc107; 
+            color: #333; 
+        }
+        .btn-limpar { 
+            background: #dc3545; 
+            color: white; 
+        }
+        .btn:hover { 
+            transform: translateY(-1px); 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15); 
+        }
+        .btn:active { transform: translateY(0); }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .input-group { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 15px; 
+        }
+        .extras-group { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 6px; 
+            font-size: 0.9em; 
+        }
+        .extras-item { 
+            display: flex; 
+            align-items: center; 
+            gap: 6px; 
+        }
+        .extras-item input { width: auto; }
+        .produtos-lista { 
+            margin-top: 30px; 
+            display: none; 
+        }
+        .produtos-lista.show { display: block; }
+        .produtos-tabela { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 15px; 
+            font-size: 0.9em; 
+        }
+        .produtos-tabela th, .produtos-tabela td { 
+            border: 1px solid #ddd; 
+            padding: 10px; 
+            text-align: left; 
+        }
+        .produtos-tabela th { 
+            background: #667eea; 
+            color: white; 
+        }
+        .produtos-tabela tr:nth-child(even) { background: #f8f9fa; }
+        .produtos-tabela tr:hover { background: #e9ecef !important; }
+        .input-tabela { 
+            width: 80px; 
+            padding: 4px 6px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            font-size: 0.9em; 
+        }
+        .btn-remover, .btn-editar-produto { 
+            color: white; 
+            border: none; 
+            padding: 5px 10px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-size: 0.85em; 
+            margin-right: 5px;
+        }
+        .btn-remover { background: #dc3545; }
+        .btn-remover:hover { background: #c82333; }
+        .btn-editar-produto { background: #667eea; }
+        .btn-editar-produto:hover { background: #5568d3; }
+        .totais-orcamento { 
+            margin-top: 20px; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); 
+            border-radius: 10px; 
+        }
+        .totais-orcamento h3 { 
+            color: #667eea; 
+            margin-bottom: 15px; 
+        }
+        .total-item { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 8px 0; 
+            font-size: 1.1em; 
+        }
+        .total-valor { 
+            font-weight: 700; 
+            color: #764ba2; 
+        }
+        .historico { 
+            margin-top: 40px; 
+            padding: 20px; 
+            background: #f8f9fa; 
+            border-radius: 10px; 
+        }
+        .historico h2 { 
+            color: #333; 
+            margin-bottom: 15px; 
+        }
+        .historico-item { 
+            background: white; 
+            padding: 15px; 
+            margin-bottom: 10px; 
+            border-radius: 8px; 
+            border-left: 4px solid #667eea; 
+            transition: all 0.2s; 
+        }
+        .historico-item:hover { 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+        }
+        .historico-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 5px; 
+        }
+        .historico-cliente { 
+            font-weight: 700; 
+            color: #333; 
+        }
+        .historico-data { 
+            font-size: 0.85em; 
+            color: #666; 
+        }
+        .historico-info { 
+            font-size: 0.9em; 
+            color: #555; 
+            margin-bottom: 10px; 
+        }
+        .historico-acoes { 
+            display: flex; 
+            gap: 8px; 
+        }
+        .btn-historico { 
+            padding: 5px 12px; 
+            border: none; 
+            border-radius: 5px; 
+            font-size: 0.85em; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+        }
+        .btn-editar-historico { 
+            background: #667eea; 
+            color: white; 
+        }
+        .btn-editar-historico:hover { background: #5568d3; }
+        .btn-historico-remover { 
+            background: #dc3545; 
+            color: white; 
+        }
+        .btn-historico-remover:hover { background: #c82333; }
+        .modal { 
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0; 
+            top: 0; 
+            width: 100%; 
+            height: 100%; 
+            background-color: rgba(0,0,0,0.5); 
+        }
+        .modal-content { 
+            background-color: white; 
+            margin: 5% auto; 
+            padding: 30px; 
+            border-radius: 15px; 
+            width: 90%; 
+            max-width: 600px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        .modal-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 20px; 
+        }
+        .modal-header h2 { 
+            color: #333; 
+            font-size: 1.3em; 
+        }
+        .close { 
+            color: #aaa; 
+            font-size: 28px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            line-height: 20px; 
+        }
+        .close:hover { color: #000; }
+        @media (max-width: 768px) { 
+            .input-group { grid-template-columns: 1fr; } 
+            .container { padding: 25px; } 
+            .produtos-tabela { font-size: 0.8em; } 
+            .btn-row { flex-direction: column; } 
+            .btn { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖨️ Sistema de Precificação 3D</h1>
+        <p class="subtitle">Orçamentos com múltiplos produtos, PDF e WhatsApp - Online</p>
+
+        <div id="loadingAlert" class="loading">
+            ⏳ Carregando dados do servidor...
+        </div>
+
+        <div id="errorAlert" class="error"></div>
+
+        <div id="alertEditando" class="alert-editando">
+            ✏️ Você está editando um orçamento existente
+        </div>
+
+        <form id="formPrecificacao">
+            <div class="form-group">
+                <label for="nomeCliente">👤 Nome do Cliente</label>
+                <input type="text" id="nomeCliente" placeholder="Ex: João da Silva">
+            </div>
+
+            <div class="form-group">
+                <label for="nomeProduto">📦 Nome do Produto</label>
+                <input type="text" id="nomeProduto" required placeholder="Ex: Chaveiro personalizado">
+            </div>
+
+            <div class="input-group">
+                <div class="form-group">
+                    <label for="quantidade">🔢 Quantidade</label>
+                    <input type="number" id="quantidade" min="1" value="1" required>
+                </div>
+                <div class="form-group">
+                    <label for="valorFilamento">💰 Valor do Filamento (rolo - R$)</label>
+                    <input type="number" id="valorFilamento" step="0.01" required value="99.00">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="materialGasto">🧵 Material gasto por peça (g)</label>
+                <input type="number" id="materialGasto" step="0.1" required placeholder="Ex: 15">
+            </div>
+
+            <div class="input-group">
+                <div class="form-group">
+                    <label for="tempoImpressao">⏱️ Tempo de Impressão por peça (horas)</label>
+                    <input type="number" id="tempoImpressao" step="0.1" required placeholder="Ex: 1.5">
+                </div>
+                <div class="form-group">
+                    <label for="taxaEnergia">⚡ Taxa de Energia (R$/kWh)</label>
+                    <input type="number" id="taxaEnergia" step="0.01" required value="1.2">
+                </div>
+            </div>
+
+            <div class="input-group">
+                <div class="form-group">
+                    <label for="consumoImpressora">🔌 Consumo da Impressora (W)</label>
+                    <input type="number" id="consumoImpressora" step="1" required value="350">
+                </div>
+                <div class="form-group">
+                    <label>💵 Custos Extras (por peça)</label>
+                    <div class="extras-group">
+                        <div class="extras-item">
+                            <input type="checkbox" id="extraArgola" data-valor="0.5">
+                            <label for="extraArgola">Argola - R$ 0,50</label>
+                        </div>
+                        <div class="extras-item">
+                            <input type="checkbox" id="extraTag" data-valor="0.5">
+                            <label for="extraTag">Tag - R$ 0,50</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-row">
+                <button type="submit" class="btn btn-adicionar">➕ Adicionar ao Orçamento</button>
+                <button type="button" id="btnNovo" class="btn btn-novo">🆕 Novo Orçamento</button>
+            </div>
+        </form>
+
+        <div id="produtosLista" class="produtos-lista">
+            <h3>📋 Produtos no Orçamento</h3>
+            <table class="produtos-tabela">
+                <thead>
+                    <tr>
+                        <th>Produto</th>
+                        <th>Qtd</th>
+                        <th>Custo Tempo</th>
+                        <th>Custo Material</th>
+                        <th>Extras</th>
+                        <th>Valor Unit.</th>
+                        <th>Valor Total</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoTabelaProdutos"></tbody>
+            </table>
+
+            <div class="totais-orcamento">
+                <h3>💰 Total do Orçamento</h3>
+                <div class="total-item">
+                    <span>Valor Total:</span>
+                    <span class="total-valor" id="valorTotalOrcamento">R$ 0,00</span>
+                </div>
+            </div>
+
+            <div class="btn-row">
+                <button type="button" id="btnPdf" class="btn btn-pdf">📄 Gerar PDF</button>
+                <button type="button" id="btnWhatsapp" class="btn btn-whatsapp">📱 WhatsApp</button>
+                <button type="button" id="btnLimpar" class="btn btn-limpar">🗑️ Limpar</button>
+            </div>
+        </div>
+
+        <div class="historico">
+            <h2>📚 Histórico de Orçamentos</h2>
+            <div id="listaHistorico"></div>
+        </div>
+    </div>
+
+    <!-- Modal WhatsApp -->
+    <div id="modalWhatsapp" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📱 Enviar WhatsApp</h2>
+                <span class="close" onclick="fecharModalWhatsapp()">&times;</span>
+            </div>
+            <div class="form-group">
+                <label for="telefoneWhatsapp">Número (com DDD)</label>
+                <input type="tel" id="telefoneWhatsapp" placeholder="11999999999">
+            </div>
+            <div class="btn-row">
+                <button type="button" id="btnEnviarWhatsapp" class="btn btn-whatsapp">Enviar</button>
+            </div>
+            <p style="margin-top:10px;font-size:0.85em;color:#555;">
+                Dica: gere o PDF, salve, e depois anexe na conversa do WhatsApp.
+            </p>
+        </div>
+    </div>
+
+    <!-- Modal Editar Produto -->
+    <div id="modalEditarProduto" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>✏️ Editar Produto</h2>
+                <span class="close" onclick="fecharModalEditarProduto()">&times;</span>
+            </div>
+            <form id="formEditarProduto">
+                <div class="form-group">
+                    <label for="editNomeProduto">📦 Nome do Produto</label>
+                    <input type="text" id="editNomeProduto" required>
+                </div>
+
+                <div class="input-group">
+                    <div class="form-group">
+                        <label for="editQuantidade">🔢 Quantidade</label>
+                        <input type="number" id="editQuantidade" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editValorFilamento">💰 Valor do Filamento (R$)</label>
+                        <input type="number" id="editValorFilamento" step="0.01" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="editMaterialGasto">🧵 Material gasto por peça (g)</label>
+                    <input type="number" id="editMaterialGasto" step="0.1" required>
+                </div>
+
+                <div class="input-group">
+                    <div class="form-group">
+                        <label for="editTempoImpressao">⏱️ Tempo de Impressão (horas)</label>
+                        <input type="number" id="editTempoImpressao" step="0.1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editTaxaEnergia">⚡ Taxa de Energia (R$/kWh)</label>
+                        <input type="number" id="editTaxaEnergia" step="0.01" required>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <div class="form-group">
+                        <label for="editConsumoImpressora">🔌 Consumo da Impressora (W)</label>
+                        <input type="number" id="editConsumoImpressora" step="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>💵 Custos Extras (por peça)</label>
+                        <div class="extras-group">
+                            <div class="extras-item">
+                                <input type="checkbox" id="editExtraArgola" data-valor="0.5">
+                                <label for="editExtraArgola">Argola - R$ 0,50</label>
+                            </div>
+                            <div class="extras-item">
+                                <input type="checkbox" id="editExtraTag" data-valor="0.5">
+                                <label for="editExtraTag">Tag - R$ 0,50</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="btn-row">
+                    <button type="submit" class="btn btn-adicionar">💾 Salvar Alterações</button>
+                    <button type="button" class="btn btn-limpar" onclick="fecharModalEditarProduto()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ========== CONFIGURAÇÃO DA API ==========
+        const API_URL = 'https://orcamento3d.onrender.com';
+
+        // Variáveis globais
+        let produtosOrcamento = [];
+        let orcamentoEditandoId = null;
+        let produtoEditandoIndex = null;
+
+        // Elementos do DOM
+        const modalWhatsapp = document.getElementById('modalWhatsapp');
+        const modalEditarProduto = document.getElementById('modalEditarProduto');
+        const btnWhatsapp = document.getElementById('btnWhatsapp');
+        const btnEnviarWhatsapp = document.getElementById('btnEnviarWhatsapp');
+        const alertEditando = document.getElementById('alertEditando');
+        const loadingAlert = document.getElementById('loadingAlert');
+        const errorAlert = document.getElementById('errorAlert');
+
+        // ========== FUNÇÕES DE API ==========
+
+        async function apiRequest(action, method = 'GET', data = null) {
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                };
+
+                if (data && method !== 'GET') {
+                    options.body = JSON.stringify(data);
+                }
+
+                const url = method === 'GET' && data 
+                    ? `${API_URL}?action=${action}&${new URLSearchParams(data).toString()}`
+                    : `${API_URL}?action=${action}`;
+
+                const response = await fetch(url, options);
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Erro na requisição');
+                }
+
+                return result;
+            } catch (error) {
+                console.error('Erro na API:', error);
+                showError('Erro ao comunicar com o servidor: ' + error.message);
+                throw error;
+            }
+        }
+
+        async function carregarOrcamentos() {
+            showLoading(true);
+            try {
+                const result = await apiRequest('listar_orcamentos');
+                renderizarHistorico(result.data);
+            } catch (error) {
+                console.error('Erro ao carregar orçamentos:', error);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function obterOrcamento(id) {
+            showLoading(true);
+            try {
+                const result = await apiRequest('obter_orcamento', 'GET', { id });
+                return result.data;
+            } catch (error) {
+                console.error('Erro ao obter orçamento:', error);
+                return null;
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function salvarOrcamentoAPI() {
+            if (produtosOrcamento.length === 0) return;
+
+            const nomeCliente = produtosOrcamento[0].nomeCliente || 'Cliente não informado';
+            let totalGeral = 0;
+            produtosOrcamento.forEach(p => totalGeral += p.precoTotal);
+
+            const dados = {
+                nome_cliente: nomeCliente,
+                total: totalGeral,
+                produtos: produtosOrcamento
+            };
+
+            showLoading(true);
+            try {
+                if (orcamentoEditandoId !== null) {
+                    // Atualizar orçamento existente
+                    dados.id = orcamentoEditandoId;
+                    await apiRequest('atualizar_orcamento', 'POST', dados);
+                    orcamentoEditandoId = null;
+                    alertEditando.style.display = 'none';
+                } else {
+                    // Criar novo orçamento
+                    const result = await apiRequest('criar_orcamento', 'POST', dados);
+                    console.log('Orçamento criado com ID:', result.id);
+                }
+
+                await carregarOrcamentos();
+            } catch (error) {
+                console.error('Erro ao salvar orçamento:', error);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function deletarOrcamentoAPI(id) {
+            if (!confirm('Tem certeza que deseja deletar este orçamento?')) return;
+
+            showLoading(true);
+            try {
+                await apiRequest('deletar_orcamento', 'GET', { id });
+                await carregarOrcamentos();
+            } catch (error) {
+                console.error('Erro ao deletar orçamento:', error);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // ========== FUNÇÕES UTILITÁRIAS ==========
+
+        function showLoading(show) {
+            loadingAlert.style.display = show ? 'block' : 'none';
+        }
+
+        function showError(message) {
+            errorAlert.textContent = message;
+            errorAlert.style.display = 'block';
+            setTimeout(() => {
+                errorAlert.style.display = 'none';
+            }, 5000);
+        }
+
+        function arredondarPara050(valor) {
+            return Math.ceil(valor * 2) / 2;
+        }
+
+        function formatarMoeda(valor) {
+            return valor.toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            });
+        }
+
+        function formatarMoedaWhatsapp(valor) {
+            return 'R$ ' + valor.toFixed(2).replace('.', ',');
+        }
+
+        function fecharModalWhatsapp() {
+            modalWhatsapp.style.display = 'none';
+        }
+
+        function fecharModalEditarProduto() {
+            modalEditarProduto.style.display = 'none';
+            produtoEditandoIndex = null;
+        }
+
+        // ========== EVENT LISTENERS ==========
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('formPrecificacao').addEventListener('submit', function(e) {
+                e.preventDefault();
+                adicionarProduto();
+            });
+
+            document.getElementById('formEditarProduto').addEventListener('submit', function(e) {
+                e.preventDefault();
+                salvarEdicaoProduto();
+            });
+
+            document.getElementById('btnNovo').addEventListener('click', novoOrcamento);
+            document.getElementById('btnLimpar').addEventListener('click', limparOrcamento);
+            document.getElementById('btnPdf').addEventListener('click', gerarPDF);
+
+            btnWhatsapp.addEventListener('click', function() {
+                if (produtosOrcamento.length === 0) {
+                    alert('Adicione produtos ao orçamento primeiro!');
+                    return;
+                }
+                modalWhatsapp.style.display = 'block';
+            });
+
+            window.addEventListener('click', function(e) {
+                if (e.target === modalWhatsapp) {
+                    fecharModalWhatsapp();
+                }
+                if (e.target === modalEditarProduto) {
+                    fecharModalEditarProduto();
+                }
+            });
+
+            btnEnviarWhatsapp.addEventListener('click', enviarWhatsapp);
+
+            // Carregar orçamentos do MySQL
+            carregarOrcamentos();
+        });
+
+        // ========== FUNÇÕES DE PRODUTO ==========
+
+        function adicionarProduto() {
+            const nomeCliente = document.getElementById('nomeCliente').value.trim();
+            const nomeProduto = document.getElementById('nomeProduto').value.trim();
+            const quantidade = parseInt(document.getElementById('quantidade').value) || 1;
+            const valorFilamento = parseFloat(document.getElementById('valorFilamento').value);
+            const materialGasto = parseFloat(document.getElementById('materialGasto').value);
+            const tempoImpressao = parseFloat(document.getElementById('tempoImpressao').value);
+            const taxaEnergia = parseFloat(document.getElementById('taxaEnergia').value);
+            const consumoImpressora = parseFloat(document.getElementById('consumoImpressora').value);
+
+            let custosExtras = 0;
+            const extraArgola = document.getElementById('extraArgola');
+            const extraTag = document.getElementById('extraTag');
+            if (extraArgola.checked) custosExtras += parseFloat(extraArgola.dataset.valor);
+            if (extraTag.checked) custosExtras += parseFloat(extraTag.dataset.valor);
+
+            if (!nomeProduto || isNaN(valorFilamento) || isNaN(materialGasto) ||
+                isNaN(tempoImpressao) || isNaN(taxaEnergia) || isNaN(consumoImpressora)) {
+                alert('Preencha todos os campos corretamente.');
+                return;
+            }
+
+            const pesoRoloGramas = 1000;
+            const custoFilamentoPorPeca = (valorFilamento / pesoRoloGramas) * materialGasto;
+            const consumoKWhPorPeca = (consumoImpressora / 1000) * tempoImpressao;
+            const custoEnergiaPorPeca = consumoKWhPorPeca * taxaEnergia;
+            const custoPorPeca = custoFilamentoPorPeca + custoEnergiaPorPeca + custosExtras;
+
+            let margem;
+            if (quantidade >= 100) {
+                margem = 2.10;
+            } else if (quantidade >= 50) {
+                margem = 3.20;
+            } else {
+                margem = 4.20;
+            }
+
+            const precoUnitario = arredondarPara050(custoPorPeca * margem);
+            const precoTotal = arredondarPara050(precoUnitario * quantidade);
+
+            const produto = {
+                nomeCliente,
+                nomeProduto,
+                quantidade,
+                valorFilamento,
+                materialGasto,
+                tempoImpressao,
+                taxaEnergia,
+                consumoImpressora,
+                custoEnergiaPorPeca,
+                custoFilamentoPorPeca,
+                custosExtras,
+                extraArgola: extraArgola.checked,
+                extraTag: extraTag.checked,
+                precoUnitario,
+                precoTotal
+            };
+
+            produtosOrcamento.push(produto);
+            renderizarProdutos();
+            limparFormularioProduto();
+        }
+
+        function renderizarProdutos() {
+            const corpo = document.getElementById('corpoTabelaProdutos');
+            corpo.innerHTML = '';
+
+            let totalGeral = 0;
+
+            produtosOrcamento.forEach((p, i) => {
+                totalGeral += p.precoTotal;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${p.nomeProduto}</td>
+                    <td>${p.quantidade}</td>
+                    <td>${formatarMoeda(p.custoEnergiaPorPeca)}</td>
+                    <td>${formatarMoeda(p.custoFilamentoPorPeca)}</td>
+                    <td>${formatarMoeda(p.custosExtras)}</td>
+                    <td>${formatarMoeda(p.precoUnitario)}</td>
+                    <td>${formatarMoeda(p.precoTotal)}</td>
+                    <td>
+                        <button class="btn-editar-produto" onclick="abrirModalEditarProduto(${i})">✏️</button>
+                        <button class="btn-remover" onclick="removerProduto(${i})">🗑️</button>
+                    </td>
+                `;
+                corpo.appendChild(tr);
+            });
+
+            document.getElementById('valorTotalOrcamento').textContent = formatarMoeda(totalGeral);
+            document.getElementById('produtosLista').classList.toggle('show', produtosOrcamento.length > 0);
+        }
+
+        window.abrirModalEditarProduto = function(index) {
+            produtoEditandoIndex = index;
+            const p = produtosOrcamento[index];
+
+            document.getElementById('editNomeProduto').value = p.nomeProduto;
+            document.getElementById('editQuantidade').value = p.quantidade;
+            document.getElementById('editValorFilamento').value = p.valorFilamento;
+            document.getElementById('editMaterialGasto').value = p.materialGasto;
+            document.getElementById('editTempoImpressao').value = p.tempoImpressao;
+            document.getElementById('editTaxaEnergia').value = p.taxaEnergia;
+            document.getElementById('editConsumoImpressora').value = p.consumoImpressora;
+            document.getElementById('editExtraArgola').checked = p.extraArgola || false;
+            document.getElementById('editExtraTag').checked = p.extraTag || false;
+
+            modalEditarProduto.style.display = 'block';
+        };
+
+        function salvarEdicaoProduto() {
+            if (produtoEditandoIndex === null) return;
+
+            const nomeProduto = document.getElementById('editNomeProduto').value.trim();
+            const quantidade = parseInt(document.getElementById('editQuantidade').value) || 1;
+            const valorFilamento = parseFloat(document.getElementById('editValorFilamento').value);
+            const materialGasto = parseFloat(document.getElementById('editMaterialGasto').value);
+            const tempoImpressao = parseFloat(document.getElementById('editTempoImpressao').value);
+            const taxaEnergia = parseFloat(document.getElementById('editTaxaEnergia').value);
+            const consumoImpressora = parseFloat(document.getElementById('editConsumoImpressora').value);
+
+            let custosExtras = 0;
+            const extraArgola = document.getElementById('editExtraArgola');
+            const extraTag = document.getElementById('editExtraTag');
+            if (extraArgola.checked) custosExtras += parseFloat(extraArgola.dataset.valor);
+            if (extraTag.checked) custosExtras += parseFloat(extraTag.dataset.valor);
+
+            if (!nomeProduto || isNaN(valorFilamento) || isNaN(materialGasto) ||
+                isNaN(tempoImpressao) || isNaN(taxaEnergia) || isNaN(consumoImpressora)) {
+                alert('Preencha todos os campos corretamente.');
+                return;
+            }
+
+            const pesoRoloGramas = 1000;
+            const custoFilamentoPorPeca = (valorFilamento / pesoRoloGramas) * materialGasto;
+            const consumoKWhPorPeca = (consumoImpressora / 1000) * tempoImpressao;
+            const custoEnergiaPorPeca = consumoKWhPorPeca * taxaEnergia;
+            const custoPorPeca = custoFilamentoPorPeca + custoEnergiaPorPeca + custosExtras;
+
+            let margem;
+            if (quantidade >= 100) {
+                margem = 2.10;
+            } else if (quantidade >= 50) {
+                margem = 3.20;
+            } else {
+                margem = 4.20;
+            }
+
+            const precoUnitario = arredondarPara050(custoPorPeca * margem);
+            const precoTotal = arredondarPara050(precoUnitario * quantidade);
+
+            produtosOrcamento[produtoEditandoIndex] = {
+                nomeCliente: produtosOrcamento[produtoEditandoIndex].nomeCliente,
+                nomeProduto,
+                quantidade,
+                valorFilamento,
+                materialGasto,
+                tempoImpressao,
+                taxaEnergia,
+                consumoImpressora,
+                custoEnergiaPorPeca,
+                custoFilamentoPorPeca,
+                custosExtras,
+                extraArgola: extraArgola.checked,
+                extraTag: extraTag.checked,
+                precoUnitario,
+                precoTotal
+            };
+
+            renderizarProdutos();
+            fecharModalEditarProduto();
+        }
+
+        window.removerProduto = function(index) {
+            if (confirm('Remover este produto do orçamento?')) {
+                produtosOrcamento.splice(index, 1);
+                renderizarProdutos();
+            }
+        };
+
+        function limparFormularioProduto() {
+            document.getElementById('nomeProduto').value = '';
+            document.getElementById('quantidade').value = '1';
+            document.getElementById('materialGasto').value = '';
+            document.getElementById('tempoImpressao').value = '';
+            document.getElementById('extraArgola').checked = false;
+            document.getElementById('extraTag').checked = false;
+            document.getElementById('nomeProduto').focus();
+        }
+
+        // ========== FUNÇÕES DE ORÇAMENTO ==========
+
+        function novoOrcamento() {
+            if (produtosOrcamento.length > 0 && confirm('Deseja salvar o orçamento atual antes de criar um novo?')) {
+                salvarOrcamentoAPI();
+            }
+            limparOrcamento();
+        }
+
+        function limparOrcamento() {
+            produtosOrcamento = [];
+            orcamentoEditandoId = null;
+            alertEditando.style.display = 'none';
+            document.getElementById('produtosLista').classList.remove('show');
+            document.getElementById('nomeCliente').value = '';
+            limparFormularioProduto();
+        }
+
+        function renderizarHistorico(orcamentos) {
+            const lista = document.getElementById('listaHistorico');
+            if (!orcamentos || orcamentos.length === 0) {
+                lista.innerHTML = '<p style="color:#666;">Nenhum orçamento salvo.</p>';
+                return;
+            }
+
+            lista.innerHTML = '';
+            orcamentos.forEach(orc => {
+                const div = document.createElement('div');
+                div.className = 'historico-item';
+
+                const data = new Date(orc.data_criacao).toLocaleString('pt-BR');
+
+                div.innerHTML = `
+                    <div class="historico-header">
+                        <span class="historico-cliente">${orc.nome_cliente}</span>
+                        <span class="historico-data">${data}</span>
+                    </div>
+                    <div class="historico-info">
+                        ${orc.total_produtos} produto(s) | Total: ${formatarMoeda(parseFloat(orc.total))}
+                    </div>
+                    <div class="historico-acoes">
+                        <button class="btn-historico btn-editar-historico" onclick="editarOrcamento(${orc.id})">✏️ Editar</button>
+                        <button class="btn-historico btn-historico-remover" onclick="deletarOrcamentoAPI(${orc.id})">🗑️ Remover</button>
+                    </div>
+                `;
+                lista.appendChild(div);
+            });
+        }
+
+        window.editarOrcamento = async function(id) {
+            const orc = await obterOrcamento(id);
+            if (!orc) return;
+
+            // Converter produtos do banco para formato do frontend
+            produtosOrcamento = orc.produtos.map(p => ({
+                nomeCliente: orc.nome_cliente,
+                nomeProduto: p.nome_produto,
+                quantidade: parseInt(p.quantidade),
+                valorFilamento: parseFloat(p.valor_filamento),
+                materialGasto: parseFloat(p.material_gasto),
+                tempoImpressao: parseFloat(p.tempo_impressao),
+                taxaEnergia: parseFloat(p.taxa_energia),
+                consumoImpressora: parseInt(p.consumo_impressora),
+                custoEnergiaPorPeca: parseFloat(p.custo_energia_por_peca),
+                custoFilamentoPorPeca: parseFloat(p.custo_filamento_por_peca),
+                custosExtras: parseFloat(p.custos_extras),
+                extraArgola: p.extra_argola == 1,
+                extraTag: p.extra_tag == 1,
+                precoUnitario: parseFloat(p.preco_unitario),
+                precoTotal: parseFloat(p.preco_total)
+            }));
+
+            orcamentoEditandoId = orc.id;
+            document.getElementById('nomeCliente').value = orc.nome_cliente;
+            alertEditando.style.display = 'block';
+            renderizarProdutos();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        // ========== FUNÇÕES DE EXPORTAÇÃO ==========
+
+        function enviarWhatsapp() {
+            if (produtosOrcamento.length === 0) {
+                alert('Adicione produtos primeiro!');
+                return;
+            }
+
+            const telefone = document.getElementById('telefoneWhatsapp').value.replace(/\D/g, '');
+            if (!telefone) {
+                alert('Digite o número!');
+                return;
+            }
+
+            salvarOrcamentoAPI();
+
+            const nomeCliente = produtosOrcamento[0].nomeCliente || 'Cliente';
+            const dataFormatada = new Date().toLocaleDateString('pt-BR');
+
+            let msg = `🖨️ *ORÇAMENTO IMPRESSÃO 3D*\n\n`;
+            msg += `📅 ${dataFormatada}\n`;
+            msg += `👤 ${nomeCliente}\n\n`;
+            msg += `┌─────────────────────────────────┐\n`;
+            msg += `│ PRODUTO    │QTD│ UNIT.│ TOTAL │\n`;
+            msg += `├─────────────────────────────────┤\n`;
+
+            let totalGeral = 0;
+            produtosOrcamento.forEach(p => {
+                totalGeral += p.precoTotal;
+                let nome = p.nomeProduto.length > 10 ? p.nomeProduto.substring(0,10) : p.nomeProduto;
+                nome = nome.padEnd(10,' ');
+                const qtd = String(p.quantidade).padStart(3,' ');
+                const unit = formatarMoedaWhatsapp(p.precoUnitario).padStart(6,' ');
+                const tot = formatarMoedaWhatsapp(p.precoTotal).padStart(7,' ');
+                msg += `│ ${nome} │${qtd}│${unit}│${tot} │\n`;
+            });
+
+            msg += `└─────────────────────────────────┘\n\n`;
+            msg += `💰 *TOTAL: ${formatarMoedaWhatsapp(totalGeral)}*\n\n`;
+            msg += `✅ Válido por 7 dias\n`;
+            msg += `📎 O PDF detalhado pode ser enviado em anexo.\n`;
+            msg += `📞 Qualquer dúvida, à disposição!`;
+
+            const url = `https://wa.me/55${telefone}?text=${encodeURIComponent(msg)}`;
+            window.open(url, '_blank');
+            fecharModalWhatsapp();
+            document.getElementById('telefoneWhatsapp').value = '';
+        }
+
+        function gerarPDF() {
+            if (produtosOrcamento.length === 0) {
+                alert('Adicione produtos primeiro!');
+                return;
+            }
+
+            salvarOrcamentoAPI();
+
+            const nomeCliente = produtosOrcamento[0].nomeCliente || 'Cliente';
+            const hoje = new Date();
+            const dataFormatada = hoje.toLocaleDateString('pt-BR') + ' ' +
+                hoje.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+
+            let linhas = '';
+            let totalGeral = 0;
+            produtosOrcamento.forEach((p, i) => {
+                totalGeral += p.precoTotal;
+                const bg = i % 2 === 0 ? '#ffffff' : '#f5f5f5';
+                linhas += `
+                    <tr style="background-color:${bg};">
+                        <td>${p.quantidade}</td>
+                        <td>${p.nomeProduto}</td>
+                        <td>${formatarMoeda(p.precoUnitario)}</td>
+                        <td>${formatarMoeda(p.precoTotal)}</td>
+                    </tr>`;
+            });
+
+            const html = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Orçamento - ${nomeCliente}</title>
+<style>
+body{font-family:Arial,sans-serif;padding:40px;max-width:800px;margin:0 auto}
+h1{text-align:center;color:#333;border-bottom:3px solid #667eea;padding-bottom:15px;margin-bottom:30px}
+.info{background:#f5f5f5;padding:20px;border-radius:8px;margin:25px 0;font-size:15px}
+.info p{margin:6px 0}
+table{width:100%;border-collapse:collapse;margin:30px 0}
+th,td{border:1px solid #ddd;padding:12px;text-align:left}
+th{background-color:#667eea;color:white;font-weight:600}
+.total-row{background-color:#e8f4f8;font-weight:bold;font-size:18px}
+.rodape{margin-top:50px;text-align:center;font-size:12px;color:#666;border-top:1px solid #ddd;padding-top:20px}
+</style>
+</head>
+<body>
+<h1>🖨️ Orçamento Impressão 3D</h1>
+<div class="info">
+<p><strong>Cliente:</strong> ${nomeCliente}</p>
+<p><strong>Data:</strong> ${dataFormatada}</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Quantidade</th>
+<th>Descrição</th>
+<th>Valor Unitário</th>
+<th>Valor Total</th>
+</tr>
+</thead>
+<tbody>
+${linhas}
+<tr class="total-row">
+<td colspan="3">TOTAL</td>
+<td>${formatarMoeda(totalGeral)}</td>
+</tr>
+</tbody>
+</table>
+<div class="rodape">
+<p>Orçamento válido por 7 dias a partir da data de emissão.</p>
+<p>Valores calculados com base em custos de material, energia e acessórios.</p>
+</div>
+</body>
+</html>`;
+
+            const win = window.open('', '_blank');
+            win.document.write(html);
+            win.document.close();
+            win.onload = function() {
+                win.focus();
+                win.print();
+            };
+        }
+    </script>
+</body>
+</html>

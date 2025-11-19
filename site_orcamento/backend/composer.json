@@ -1,0 +1,8 @@
+{
+    "name": "orcamento3d/api",
+    "description": "API para Sistema de Orçamentos 3D",
+    "type": "project",
+    "require": {
+        "php": ">=7.4"
+    }
+}
